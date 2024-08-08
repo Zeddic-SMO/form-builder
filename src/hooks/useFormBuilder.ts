@@ -1,19 +1,21 @@
 import { useState } from "react";
+import { useAppGlobalContext } from "../context";
 import {
   FormLayoutComponentChildrenType,
   FormLayoutComponentContainerType,
   FormLayoutComponentsType,
   TemplateType,
 } from "../types/FormTemplateTypes";
-import { FormItemTypes, generateID } from "../utils/formBuilderEntity";
-import { useAppGlobalContext } from "../context";
+import { FormItemTypes, generateID } from "../utils/formBuilder.utils";
 
 interface useFormBuilderProps {
   template: TemplateType;
 }
 
 const useFormBuilder = (props: useFormBuilderProps) => {
-  const { setContainerId } = useAppGlobalContext();
+  const { containerId, setContainerId, setAllFormLayoutComponents } =
+    useAppGlobalContext();
+
   const [formLayoutComponents, setFormLayoutComponents] = useState<
     FormLayoutComponentsType[]
   >(props.template.formLayoutComponents);
@@ -35,20 +37,17 @@ const useFormBuilder = (props: useFormBuilderProps) => {
       };
       const containerId = newStep.container.id;
       setContainerId(containerId);
-      console.log(containerId, "iiii");
 
       newState.push(newStep);
 
       setFormLayoutComponents(newState);
+      setAllFormLayoutComponents(newState);
     } else if (item.itemType === FormItemTypes.CONTROL) {
       const newState = formLayoutComponents.slice();
-      console.log(newState, "state");
 
       const formContainerId = newState.findIndex(
         (f) => f.container.id === containerId
       );
-
-      console.log(formContainerId, "id");
 
       const formContainer = { ...newState[formContainerId] };
 
@@ -69,12 +68,26 @@ const useFormBuilder = (props: useFormBuilderProps) => {
       newChildren.push(obj as FormLayoutComponentChildrenType);
       formContainer.children = newChildren;
       newState[formContainerId] = formContainer;
+
+      setFormLayoutComponents(newState);
+      setAllFormLayoutComponents(newState);
+    }
+  };
+
+  // Delete a container from the layout
+  const deleteContainer = () => {
+    if (!containerId) return;
+    if (confirm("Are you sure you want to delete container?")) {
+      const newState = formLayoutComponents.filter(
+        (comp) => comp.container.id !== containerId
+      );
       setFormLayoutComponents(newState);
     }
   };
 
   return {
     handleItemAdded,
+    deleteContainer,
     formLayoutComponents,
   };
 };

@@ -1,9 +1,7 @@
 import { ChakraProvider } from "@chakra-ui/react";
-import { Provider } from "react-redux";
 import "./App.css";
-import FormBuilder from "./pages/FormBuilder";
-import { store } from "./redux/store";
 import { GlobalContextProvider } from "./context";
+import FormBuilder from "./pages/FormBuilder";
 
 function App() {
   // const [step, setStep] = useState(1);
@@ -64,10 +62,9 @@ function App() {
   // ];
 
   return (
-    <Provider store={store}>
-      <ChakraProvider>
-        <GlobalContextProvider>
-          {/* <DndProvider backend={HTML5Backend}>
+    <ChakraProvider>
+      <GlobalContextProvider>
+        {/* <DndProvider backend={HTML5Backend}>
           <div className="border-b-2 border-black flex items-center justify-between px-4">
             <span
               className={`border-2 border-black m-2 p-2 rounded-md font-bold cursor-pointer ${
@@ -123,10 +120,9 @@ function App() {
             />
           )}
         </DndProvider> */}
-          <FormBuilder />
-        </GlobalContextProvider>
-      </ChakraProvider>
-    </Provider>
+        <FormBuilder />
+      </GlobalContextProvider>
+    </ChakraProvider>
   );
 }
 

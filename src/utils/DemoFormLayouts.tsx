@@ -1,5 +1,5 @@
 import moment from "moment";
-import { generateID } from "./formBuilderEntity";
+import { generateID } from "./formBuilder.utils";
 
 const currentDateTime = moment().unix() * 1000;
 

@@ -1,32 +1,28 @@
-import React, { useRef } from "react";
-import { useDrag, useDrop } from "react-dnd";
 import type { Identifier } from "dnd-core";
+import React, { ChangeEvent, useRef } from "react";
+import { useDrag, useDrop } from "react-dnd";
+import { useAppGlobalContext } from "../context";
 import { FormLayoutComponentChildrenType } from "../types/FormTemplateTypes";
-import { FormControlNames, FormItemTypes } from "../utils/formBuilderEntity";
 import {
-  Checkbox,
-  Input,
-  Radio,
-  RadioGroup,
-  Select,
-  Textarea,
-} from "@chakra-ui/react";
+  FormControlList,
+  FormControlNames,
+  FormItemTypes,
+} from "../utils/formBuilder.utils";
 
 const selectedColor = "var(--primary)";
 const nonSelectedColor = "rgba(0,0,0,0.1)";
-const dateFormat = "yyyy, MMM dd";
 
 const renderItem = (item: FormLayoutComponentChildrenType) => {
   switch (item.controlName) {
     case FormControlNames.INPUTTEXTFIELD:
       return (
         <>
-          <Input
-            type={item.dataType}
-            // fullWidth={true}
-            placeholder={item.placeholder}
+          <input
             disabled
-            variant="outlined"
+            className="w-full border p-2 rounded-md outline-none"
+            type={item.dataType}
+            placeholder={item.placeholder}
+            name={item.controlName}
           />
         </>
       );
@@ -34,23 +30,31 @@ const renderItem = (item: FormLayoutComponentChildrenType) => {
     case FormControlNames.INPUTMULTILINE:
       return (
         <>
-          <Textarea
-            // type={item.dataType}
-            // fullWidth={true}
-            // multiline={true}
-            // minRows={item.rows}
-            placeholder={item.placeholder}
+          <textarea
             disabled
-            variant="outlined"
-          />
+            className="w-full border p-2 rounded-md outline-none"
+            placeholder={item.placeholder}
+            name={item.controlName}
+          ></textarea>
         </>
       );
 
     case FormControlNames.CHECKBOX:
       return (
         <>
-          <div className="m-t-20 p-l-0">
-            <Checkbox isDisabled style={{ marginLeft: "0px" }} />
+          <div className="">
+            {item.items &&
+              item.items.map((option: any, optIndex: any) => (
+                <div key={optIndex} className="flex items-center gap-2">
+                  <input
+                  disabled
+                    type="checkbox"
+                    name={item.controlName}
+                    value={option.value}
+                  />
+                  <label>{option.label}</label>
+                </div>
+              ))}
           </div>
         </>
       );
@@ -58,49 +62,56 @@ const renderItem = (item: FormLayoutComponentChildrenType) => {
     case FormControlNames.RADIOGROUP:
       return (
         <>
-          {/* <FormControl> */}
-          {/* <FormLabel>{item.labelName + (item.required?" *":"")}</FormLabel> */}
-          <RadioGroup name={item.controlName + item.id}>
-            {item.items?.map((i) => (
-              <Radio value={i.value} key={i.value}>
-                {i.label}
-              </Radio>
+          <div>
+            {item.items?.map((option, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  id={option.label}
+                  name={item.controlName}
+                  value={option.value}
+                  disabled
+                />
+                <label htmlFor={option.label}>{option.label}</label>
+              </div>
             ))}
-          </RadioGroup>
-          {/* </FormControl> */}
+          </div>
         </>
       );
 
     case FormControlNames.SELECTDROPDOWN:
       return (
         <>
-          {/* <FormControl style={{ minWidth: "100%" }}> */}
-          {/* <InputLabel>{item.labelName + (item.required?" *":"")}</InputLabel> */}
-          <Select
-            style={{ minWidth: "100%" }}
-            variant="outlined"
-            disabled
-            value={item.items && item.items[0].value}
-          >
+          <div className="flex flex-col w-full border p-2 rounded-md outline-none">
             {item.items?.map((i) => (
               <option key={i.value} value={i.value}>
                 {i.label}
               </option>
             ))}
-          </Select>
-          {/* </FormControl> */}
+          </div>
         </>
       );
 
     case FormControlNames.DATEFIELD:
       return (
         <>
-          <Input
+          <input
+            className="w-full flex border p-2 rounded-md outline-none"
             type={item.dataType}
-            // fullWidth={true}
             placeholder={item.placeholder}
             disabled
-            variant="outlined"
+          />
+        </>
+      );
+
+    case FormControlNames.TIMEFIELD:
+      return (
+        <>
+          <input
+            className="w-full flex border p-2 rounded-md outline-none"
+            type={item.dataType}
+            placeholder={item.placeholder}
+            disabled
           />
         </>
       );
@@ -132,6 +143,14 @@ function ControlViewComponent(props: ControlViewComponentProps) {
     index,
     moveControl,
   } = props;
+
+  const {
+    elementId,
+    setElementId,
+    allFormLayoutComponents,
+    setAllFormLayoutComponents,
+    containerId: container_id,
+  } = useAppGlobalContext();
 
   let colBackgroundcolor = nonSelectedColor;
   let color = "";
@@ -212,7 +231,7 @@ function ControlViewComponent(props: ControlViewComponentProps) {
     },
   });
 
-  const [{ isDragging }, drag, preview] = useDrag({
+  const [{ isDragging }, drag] = useDrag({
     type: FormItemTypes.CONTROL,
     item: () => {
       return { ...item, index };
@@ -225,6 +244,41 @@ function ControlViewComponent(props: ControlViewComponentProps) {
   const opacity = isDragging ? 0 : 1;
   drag(drop(ref));
 
+  const handleChangeElement = (value: string) => {
+    const newChildObject = FormControlList.find((el) => el.element === value);
+
+    if (elementId && container_id) {
+      console.log(container_id, "containerId");
+      console.log(elementId, "elementId");
+      console.log(allFormLayoutComponents, "all forms");
+
+      if (allFormLayoutComponents) {
+        const newFormEl = allFormLayoutComponents.map((container) => {
+          if (container.container.id === container_id) {
+            // Find the index of the child to replace
+            const childIndex = container.children.findIndex(
+              (child) => child.id === elementId
+            );
+
+            if (childIndex !== -1) {
+              // Replace the child object
+              // @ts-ignore
+              container.children[childIndex] = {
+                ...newChildObject,
+                containerId: container_id,
+              }; // Ensure containerId is maintained
+
+              return container;
+            }
+          }
+        });
+
+        // @ts-ignore
+        newFormEl && setAllFormLayoutComponents(newFormEl);
+      }
+    }
+  };
+
   return (
     <>
       <div
@@ -234,15 +288,32 @@ function ControlViewComponent(props: ControlViewComponentProps) {
         style={{ ...wrapperStyle, opacity }}
       >
         <div className="p-8">
-          <div className="d-flex align-items-center justify-content-between">
+          <div className="flex items-center justify-between">
             <h5>{item.labelName + (item.required ? " *" : "")}</h5>
-            <div className="control-actions">
-              <span style={{ cursor: "grab" }}>
-                <i className="fa fa-ellipsis-v"></i>
-                <i className="fa fa-ellipsis-v"></i>
-              </span>
-              <span onClick={handleDeleteControl}>
-                <i className="fa fa-trash"></i>
+            <div className="flex items-center gap-2">
+              <select
+                name=""
+                id=""
+                className="border rounded-md p-2"
+                onClick={() => setElementId(item.id)}
+                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                  const value = event.target.value;
+                  handleChangeElement(value);
+                }}
+              >
+                {FormControlList.map((el) => {
+                  return (
+                    <option key={el.id} value={el.element}>
+                      {el.element}
+                    </option>
+                  );
+                })}
+              </select>
+              <span
+                className="p-2 border border-red-400 rounded-md"
+                onClick={handleDeleteControl}
+              >
+                🗑️
               </span>
             </div>
           </div>
@@ -255,20 +326,6 @@ function ControlViewComponent(props: ControlViewComponentProps) {
           ) : null}
           <div className="mt-3">{renderItem(item)}</div>
         </div>
-        {/* <div className='col-1 p-10' style={{cursor: 'grab', backgroundColor: colBackgroundcolor, color}}>
-        <div className='m-l-10 m-t-10'><i className='fa fa-ellipsis-v'></i><i className='fa fa-ellipsis-v'></i></div>
-      </div>
-      <div className='col-11 p-10' style={{position: 'relative'}}>
-        <div>
-          {renderItem(item)}
-        </div>
-        <div className='control-actions' style={{backgroundColor:colBackgroundcolor, color}}>
-          <span onClick={()=>selectControl(item)}><i className='fa fa-pen'></i></span>
-          <span><i className='fa fa-arrow-up'></i></span>
-          <span><i className='fa fa-arrow-down'></i></span>
-          <span onClick={()=>deleteControl(item.id,containerId)}><i className='fa fa-trash'></i></span>
-        </div>
-      </div> */}
       </div>
     </>
   );
